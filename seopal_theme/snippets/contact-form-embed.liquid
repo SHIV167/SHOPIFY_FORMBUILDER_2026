@@ -1,0 +1,47 @@
+{%- comment -%}
+  SK Contact Form Builder — Theme Embed Snippet
+  Usage: {% render 'contact-form-embed', form_id: 'YOUR_FORM_ID' %}
+  Set cf_app_host to your deployed app URL.
+{%- endcomment -%}
+
+{%- assign cf_app_host = 'https://your-contactform-app.com' -%}
+{%- assign cf_shop     = shop.permanent_domain | url_encode -%}
+
+<div class="cf-form-wrapper" data-form-id="{{ form_id }}">
+  <iframe
+    id="cf-embed-{{ form_id }}"
+    src="{{ cf_app_host }}/embed?shop={{ cf_shop }}&formId={{ form_id }}"
+    frameborder="0"
+    scrolling="no"
+    allow="clipboard-write"
+    style="width:100%;border:none;min-height:400px;display:block;"
+    title="Contact Form"
+    loading="lazy"
+  ></iframe>
+</div>
+
+<script>
+(function() {
+  function handleCfMessage(e) {
+    if (!e.data || e.data.type !== 'cf_resize') return;
+    var iframes = document.querySelectorAll('iframe[id^="cf-embed-"]');
+    iframes.forEach(function(iframe) {
+      if (iframe.contentWindow === e.source) {
+        iframe.style.height = (e.data.height + 20) + 'px';
+      }
+    });
+  }
+  window.addEventListener('message', handleCfMessage);
+})();
+</script>
+
+<style>
+  .cf-form-wrapper {
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .cf-form-wrapper iframe {
+    transition: height 0.2s ease;
+  }
+</style>

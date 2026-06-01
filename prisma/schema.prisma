@@ -1,0 +1,156 @@
+// Unified Schema — shared by all Shopify apps on the same PostgreSQL database.
+// This file extends the base schema with ContactForm-specific models.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// SHARED: Store installations
+// ============================================================================
+model Shop {
+  id            String    @id @default(cuid())
+  shopifyDomain String    @unique
+  accessToken   String    @db.Text
+  email         String?
+  name          String?
+  plan          String?
+  isActive      Boolean   @default(true)
+  installedAt   DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // ContactForm App relations
+  contactForms          ContactForm[]
+  contactFormSettings   ContactFormSettings?
+
+  // Other apps share the same Shop table
+  @@index([shopifyDomain])
+  @@index([isActive])
+}
+
+// ============================================================================
+// CONTACT FORM APP MODELS
+// ============================================================================
+
+model ContactForm {
+  id          String   @id @default(cuid())
+  shopId      String
+  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  title             String
+  description       String?  @db.Text
+  recipientEmail    String?
+  successMessage    String   @default("Thank you! Your message has been sent successfully.")
+  submitButtonText  String   @default("Send Message")
+
+  // Email notifications
+  sendEmailNotification Boolean  @default(true)
+  sendConfirmationEmail Boolean  @default(false)
+  confirmationSubject   String   @default("Thank you for contacting us")
+  confirmationMessage   String?  @db.Text
+  replyToField          String?  // field label to use as reply-to
+
+  // Appearance
+  formStyle     String   @default("default")  // default | minimal | card
+  primaryColor  String   @default("#0ea5e9")
+  bgColor       String   @default("#ffffff")
+
+  // Anti-spam
+  enableHoneypot Boolean @default(true)
+
+  // Status
+  isActive    Boolean  @default(true)
+  isPublished Boolean  @default(true)
+
+  fields      ContactFormField[]
+  submissions ContactFormSubmission[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([shopId, isActive])
+  @@index([shopId, createdAt])
+}
+
+model ContactFormField {
+  id          String      @id @default(cuid())
+  formId      String
+  form        ContactForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  label        String
+  fieldType    String    // text | email | phone | textarea | select | checkbox | radio | file | hidden | date | number
+  placeholder  String?
+  helpText     String?
+  required     Boolean   @default(false)
+  options      String[]  // for select / radio / checkbox
+  defaultValue String?
+  minLength    Int?
+  maxLength    Int?
+  width        String    @default("full")  // full | half
+  sortOrder    Int       @default(0)
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([formId, sortOrder])
+}
+
+model ContactFormSubmission {
+  id      String      @id @default(cuid())
+  formId  String
+  form    ContactForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  shopId  String
+
+  data        Json    // { fieldLabel: value, ... }
+  formTitle   String  @default("")
+
+  // Metadata
+  ipAddress   String?
+  userAgent   String?
+  referrer    String?
+  pageUrl     String?
+
+  // Status
+  isRead  Boolean @default(false)
+  status  String  @default("new")  // new | read | replied | archived | spam
+
+  // Email
+  emailSent   Boolean @default(false)
+  emailError  String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([formId, createdAt])
+  @@index([shopId, status])
+  @@index([shopId, createdAt])
+  @@index([isRead])
+}
+
+model ContactFormSettings {
+  id      String  @id @default(cuid())
+  shopId  String  @unique
+  shop    Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  emailProvider    String  @default("console") // console | resend | sendgrid | smtp
+  emailFrom        String?
+  emailFromName    String  @default("Contact Form")
+  smtpHost         String?
+  smtpPort         Int?
+  smtpUser         String?
+  smtpPass         String? @db.Text
+
+  enableRecaptcha    Boolean @default(false)
+  recaptchaSiteKey   String?
+  recaptchaSecretKey String? @db.Text
+
+  storageUsedBytes   Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
