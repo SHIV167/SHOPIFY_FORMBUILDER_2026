@@ -137,18 +137,89 @@ model ContactFormSettings {
   shopId  String  @unique
   shop    Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
-  emailProvider    String  @default("console") // console | resend | sendgrid | smtp
+  // ── Sender Info ──────────────────────────────────────────
+  senderName       String  @default("Contact Form")
+  senderEmail      String?
+  customEmail      String?
+
+  // ── Admin Email Notification ─────────────────────────────
+  adminEmail            String?
+  adminEmailSubject     String  @default("[form_name] – New submission")
+  adminEmailBody        String? @db.Text
+
+  // ── Customer Email Notification ──────────────────────────
+  allowCustomerEmail     Boolean @default(false)
+  customerEmailSubject   String  @default("Thank you for contacting us")
+  customerEmailBody      String? @db.Text
+
+  // ── Global CSS ───────────────────────────────────────────
+  globalCss        String? @db.Text
+
+  // ── Email provider (legacy / resend / sendgrid) ──────────
+  emailProvider    String  @default("console")
   emailFrom        String?
   emailFromName    String  @default("Contact Form")
+
+  // ── SMTP ─────────────────────────────────────────────────
+  smtpEnabled      Boolean @default(false)
   smtpHost         String?
-  smtpPort         Int?
+  smtpPort         Int     @default(587)
   smtpUser         String?
   smtpPass         String? @db.Text
+  smtpEncryption   Boolean @default(true)
+  smtpFromAddress  String?
+  smtpFromName     String?
 
+  // ── Klaviyo ──────────────────────────────────────────────
+  klaviyoEnabled   Boolean @default(false)
+  klaviyoApiKey    String? @db.Text
+
+  // ── Mailchimp ────────────────────────────────────────────
+  mailchimpEnabled Boolean @default(false)
+  mailchimpApiKey  String? @db.Text
+
+  // ── reCAPTCHA ────────────────────────────────────────────
   enableRecaptcha    Boolean @default(false)
+  recaptchaType      String  @default("v2")  // v2 | v3
   recaptchaSiteKey   String?
   recaptchaSecretKey String? @db.Text
 
+  // ── Spam Protection ──────────────────────────────────────
+  maxSubmissionsPerIpPerHour Int    @default(10)
+  blockedEmailDomains        String @default("tempmail.com, mailinator.com")
+
+  // ── Twilio SMS ───────────────────────────────────────────
+  twilioAccountSid String?
+  twilioAuthToken  String? @db.Text
+  twilioFromNumber String?
+
+  // ── Twilio WhatsApp ──────────────────────────────────────
+  whatsappAccountSid String?
+  whatsappFromNumber String?
+
+  // ── CRM Integrations ─────────────────────────────────────
+  hubspotToken         String? @db.Text
+  activecampaignUrl    String?
+  activecampaignApiKey String? @db.Text
+  airtableToken        String? @db.Text
+
+  // ── Stripe ───────────────────────────────────────────────
+  stripePublishableKey String?
+  stripeSecretKey      String? @db.Text
+
+  // ── Slack ────────────────────────────────────────────────
+  slackEnabled     Boolean @default(false)
+  slackWebhookUrl  String?
+
+  // ── IP Blocking ──────────────────────────────────────────
+  blockedIps       String  @default("")  // comma-separated
+  blockIpMessage   String  @default("")
+
+  // ── Developer API ────────────────────────────────────────
+  apiToken           String? @db.Text
+  apiTokenCreatedAt  DateTime?
+
+  // ── Misc ─────────────────────────────────────────────────
   storageUsedBytes   Int     @default(0)
 
   createdAt DateTime @default(now())

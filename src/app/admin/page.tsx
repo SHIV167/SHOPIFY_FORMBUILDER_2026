@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
+import SettingsPanel from "./SettingsPanel";
 
 /* ── Types ────────────────────────────────────────────────── */
 type FieldType =
@@ -1278,101 +1279,7 @@ function AdminContent() {
             )}
 
             {/* ── Settings ── */}
-            {tab === "settings" && (
-              <div className="p-6 max-w-xl space-y-6">
-                <h1 className="text-xl font-bold text-gray-900">Settings</h1>
-                <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-                  <h2 className="text-sm font-semibold text-gray-800">
-                    Email Provider
-                  </h2>
-                  <div>
-                    <label className="text-xs font-medium text-gray-600">
-                      Provider
-                    </label>
-                    <select
-                      value={settings.emailProvider || "console"}
-                      onChange={(e) =>
-                        setSettings((p: any) => ({
-                          ...p,
-                          emailProvider: e.target.value,
-                        }))
-                      }
-                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-sky-500 outline-none"
-                    >
-                      <option value="console">Console (Dev)</option>
-                      <option value="resend">Resend</option>
-                      <option value="sendgrid">SendGrid</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-gray-600">
-                      From Email
-                    </label>
-                    <input
-                      value={settings.emailFrom || ""}
-                      onChange={(e) =>
-                        setSettings((p: any) => ({
-                          ...p,
-                          emailFrom: e.target.value,
-                        }))
-                      }
-                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-sky-500 outline-none"
-                      placeholder="noreply@yourstore.com"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-gray-600">
-                      From Name
-                    </label>
-                    <input
-                      value={settings.emailFromName || ""}
-                      onChange={(e) =>
-                        setSettings((p: any) => ({
-                          ...p,
-                          emailFromName: e.target.value,
-                        }))
-                      }
-                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-sky-500 outline-none"
-                      placeholder="My Store"
-                    />
-                  </div>
-                </div>
-                <button
-                  onClick={saveSettings}
-                  disabled={saving}
-                  className="px-5 py-2.5 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white font-medium rounded-lg transition text-sm"
-                >
-                  {saving ? "Saving…" : "Save Settings"}
-                </button>
-
-                {/* Theme snippet */}
-                <div className="bg-white rounded-xl border border-gray-200 p-5">
-                  <h2 className="text-sm font-semibold text-gray-800 mb-3">
-                    Theme Integration
-                  </h2>
-                  <p className="text-xs text-gray-500 mb-3">
-                    Add this snippet to your Shopify theme to embed a form via
-                    iframe:
-                  </p>
-                  <pre className="bg-gray-900 text-green-300 text-xs p-4 rounded-lg overflow-auto whitespace-pre-wrap">{`{%- assign cf_app_host = '${process.env.NEXT_PUBLIC_HOST || "https://your-app.com"}' -%}
-{%- assign cf_form_id = 'FORM_ID_HERE' -%}
-<iframe
-  src="{{ cf_app_host }}/embed?shop={{ shop.permanent_domain | url_encode }}&formId={{ cf_form_id }}"
-  id="cf-embed-{{ cf_form_id }}"
-  frameborder="0"
-  scrolling="no"
-  style="width:100%;border:none;min-height:400px;"
-  title="Contact Form"
-></iframe>
-<script>
-  window.addEventListener('message', function(e) {
-    if (e.data && e.data.type === 'cf_resize')
-      document.getElementById('cf-embed-{{ cf_form_id }}').style.height = e.data.height + 'px';
-  });
-</script>`}</pre>
-                </div>
-              </div>
-            )}
+            {tab === "settings" && <SettingsPanel shop={shop} />}
           </>
         )}
       </main>
