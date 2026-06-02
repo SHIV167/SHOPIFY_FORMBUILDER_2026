@@ -17,8 +17,29 @@ jobs:
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
             cd /home/ubuntu/formbuilder
-            git pull origin main
+            
+            # Force sync with remote (handles local changes / merge conflicts)
+            git fetch origin
+            git reset --hard origin/main
+            git clean -fd
+            
+            # Install dependencies
             npm install
+            
+            # Build the app
             npm run build
-            pm2 reload ecosystem.config.cjs
+            
+            # Verify ecosystem.config.cjs exists
+            if [ ! -f ecosystem.config.cjs ]; then
+              echo "ERROR: ecosystem.config.cjs not found after git pull!"
+              ls -la
+              exit 1
+            fi
+            
+            # Reload PM2 with the ecosystem config
+            pm2 reload ecosystem.config.cjs || pm2 start ecosystem.config.cjs
+            
+            # Reload nginx
             sudo systemctl reload nginx
+            
+            echo "Deployment completed successfully!"
