@@ -35,6 +35,9 @@ jobs:
             # Build the app
             npm run build
             
+            # Clean up old errored PM2 process if exists
+            pm2 delete contactform-builder 2>/dev/null || true
+            
             # Verify ecosystem.config.cjs exists
             if [ ! -f ecosystem.config.cjs ]; then
               echo "ERROR: ecosystem.config.cjs not found!"
@@ -42,10 +45,15 @@ jobs:
               exit 1
             fi
             
-            # Reload PM2 with the ecosystem config
-            pm2 reload ecosystem.config.cjs || pm2 start ecosystem.config.cjs
+            # Stop existing formbuilderapp if running, then start with ecosystem config
+            pm2 delete formbuilderapp 2>/dev/null || true
+            pm2 start ecosystem.config.cjs
+            pm2 save
             
             # Reload nginx
             sudo systemctl reload nginx
+            
+            # Show PM2 status
+            pm2 status
             
             echo "Deployment completed successfully!"

@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'contactform-builder',
+      name: 'formbuilderapp',
       script: './server.js',
       instances: 1,
       autorestart: true,
@@ -9,7 +9,7 @@ module.exports = {
       max_memory_restart: '1G',
       env: {
         NODE_ENV: 'production',
-        PORT: 10001,
+        PORT: 3006,
         // Fix HTTP 431 - Increase max header size to 64KB for Shopify OAuth callbacks
         NODE_OPTIONS: '--max-http-header-size=65536',
       },
