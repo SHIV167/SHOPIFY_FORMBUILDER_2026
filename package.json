@@ -4,9 +4,9 @@
   "description": "Shopify Contact Form Builder App",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 10001",
+    "dev": "node server.js",
     "build": "npx prisma generate && next build",
-    "start": "next start -p 10001",
+    "start": "NODE_ENV=production node server.js",
     "lint": "next lint",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
