@@ -55,7 +55,28 @@ function EmbedContent() {
 
   useEffect(() => {
     if (!formId) {
-      setLoading(false);
+      // If no formId provided, try to fetch the first published form for the shop
+      if (shop) {
+        fetch(`/api/forms?shop=${encodeURIComponent(shop)}`)
+          .then((r) => r.json())
+          .then((d) => {
+            if (d.forms && d.forms.length > 0) {
+              // Use the first published form
+              const firstForm = d.forms.find((f: any) => f.isPublished) || d.forms[0];
+              setForm(firstForm);
+              // Init default values
+              const defaults: Record<string, string> = {};
+              (firstForm.fields as FormField[]).forEach((f: FormField) => {
+                if (f.defaultValue) defaults[f.label] = f.defaultValue;
+              });
+              setValues(defaults);
+            }
+          })
+          .catch(console.error)
+          .finally(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
       return;
     }
 

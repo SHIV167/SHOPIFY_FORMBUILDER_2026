@@ -4,6 +4,18 @@ import { sendEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
+// CORS headers helper
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+// Handle OPTIONS preflight request
+export async function OPTIONS() {
+  return new Response(null, { headers: corsHeaders });
+}
+
 // GET /api/submissions?shop=...&formId=...&page=1&status=new
 export async function GET(req: NextRequest) {
   const shopDomain = req.nextUrl.searchParams.get("shop");
@@ -50,7 +62,7 @@ export async function GET(req: NextRequest) {
     page,
     pageSize,
     pages: Math.ceil(total / pageSize),
-  });
+  }, { headers: corsHeaders });
 }
 
 // POST /api/submissions — from embed form
@@ -238,12 +250,12 @@ export async function PATCH(req: NextRequest) {
       where: { id: { in: ids }, shopId: shop.id },
       data: updateData,
     });
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true }, { headers: corsHeaders });
   } catch (err) {
     console.error("[submissions PATCH]", err);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500, headers: corsHeaders },
     );
   }
 }
@@ -276,12 +288,12 @@ export async function DELETE(req: NextRequest) {
     await prisma.contactFormSubmission.deleteMany({
       where: { id: { in: ids }, shopId: shop.id },
     });
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true }, { headers: corsHeaders });
   } catch (err) {
     console.error("[submissions DELETE]", err);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500, headers: corsHeaders },
     );
   }
 }
