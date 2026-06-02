@@ -16,9 +16,15 @@ jobs:
           username: ubuntu
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
+            # Fix git safe.directory and ownership issues
+            sudo git config --global --add safe.directory /home/ubuntu/formbuilder
+            
+            # Fix ownership - change all files from root to ubuntu
+            sudo chown -R ubuntu:ubuntu /home/ubuntu/formbuilder
+            
             cd /home/ubuntu/formbuilder
             
-            # Force sync with remote (handles local changes / merge conflicts)
+            # Force sync with remote
             git fetch origin
             git reset --hard origin/main
             git clean -fd
@@ -31,7 +37,7 @@ jobs:
             
             # Verify ecosystem.config.cjs exists
             if [ ! -f ecosystem.config.cjs ]; then
-              echo "ERROR: ecosystem.config.cjs not found after git pull!"
+              echo "ERROR: ecosystem.config.cjs not found!"
               ls -la
               exit 1
             fi
