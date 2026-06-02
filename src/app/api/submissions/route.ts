@@ -15,11 +15,20 @@ export async function GET(req: NextRequest) {
   if (!shopDomain)
     return NextResponse.json({ error: "Missing shop" }, { status: 400 });
 
-  const shop = await prisma.shop.findUnique({
+  // Auto-create shop if not exists (no auth restriction)
+  let shop = await prisma.shop.findUnique({
     where: { shopifyDomain: shopDomain },
   });
-  if (!shop)
-    return NextResponse.json({ error: "Shop not found" }, { status: 404 });
+  if (!shop) {
+    shop = await prisma.shop.create({
+      data: {
+        shopifyDomain: shopDomain,
+        accessToken: '', // No OAuth required
+        isActive: true,
+        contactFormSettings: { create: {} },
+      },
+    });
+  }
 
   const where: any = { shopId: shop.id };
   if (formId) where.formId = formId;
@@ -62,9 +71,20 @@ export async function POST(req: NextRequest) {
     // Resolve shop: if shopDomain not provided, look it up via the formId
     let shop;
     if (shopDomain) {
+      // Auto-create shop if not exists (no auth restriction)
       shop = await prisma.shop.findUnique({
         where: { shopifyDomain: shopDomain },
       });
+      if (!shop) {
+        shop = await prisma.shop.create({
+          data: {
+            shopifyDomain: shopDomain,
+            accessToken: '', // No OAuth required
+            isActive: true,
+            contactFormSettings: { create: {} },
+          },
+        });
+      }
     } else {
       // Look up the form first to get the shopId
       const formLookup = await prisma.contactForm.findUnique({
@@ -195,11 +215,20 @@ export async function PATCH(req: NextRequest) {
         { status: 400 },
       );
 
-    const shop = await prisma.shop.findUnique({
+    // Auto-create shop if not exists (no auth restriction)
+    let shop = await prisma.shop.findUnique({
       where: { shopifyDomain: shopDomain },
     });
-    if (!shop)
-      return NextResponse.json({ error: "Shop not found" }, { status: 404 });
+    if (!shop) {
+      shop = await prisma.shop.create({
+        data: {
+          shopifyDomain: shopDomain,
+          accessToken: '', // No OAuth required
+          isActive: true,
+          contactFormSettings: { create: {} },
+        },
+      });
+    }
 
     const updateData: any = {};
     if (status !== undefined) updateData.status = status;
@@ -229,11 +258,20 @@ export async function DELETE(req: NextRequest) {
         { status: 400 },
       );
 
-    const shop = await prisma.shop.findUnique({
+    // Auto-create shop if not exists (no auth restriction)
+    let shop = await prisma.shop.findUnique({
       where: { shopifyDomain: shopDomain },
     });
-    if (!shop)
-      return NextResponse.json({ error: "Shop not found" }, { status: 404 });
+    if (!shop) {
+      shop = await prisma.shop.create({
+        data: {
+          shopifyDomain: shopDomain,
+          accessToken: '', // No OAuth required
+          isActive: true,
+          contactFormSettings: { create: {} },
+        },
+      });
+    }
 
     await prisma.contactFormSubmission.deleteMany({
       where: { id: { in: ids }, shopId: shop.id },

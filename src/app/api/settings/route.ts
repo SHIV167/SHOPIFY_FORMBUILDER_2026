@@ -11,11 +11,20 @@ export async function GET(req: NextRequest) {
     if (!shopDomain)
       return NextResponse.json({ error: "Missing shop" }, { status: 400 });
 
-    const shop = await prisma.shop.findUnique({
+    // Auto-create shop if not exists (no auth restriction)
+    let shop = await prisma.shop.findUnique({
       where: { shopifyDomain: shopDomain },
     });
-    if (!shop)
-      return NextResponse.json({ error: "Shop not found" }, { status: 404 });
+    if (!shop) {
+      shop = await prisma.shop.create({
+        data: {
+          shopifyDomain: shopDomain,
+          accessToken: '', // No OAuth required
+          isActive: true,
+          contactFormSettings: { create: {} },
+        },
+      });
+    }
 
     const settings = await prisma.contactFormSettings.findUnique({
       where: { shopId: shop.id },
@@ -42,11 +51,20 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
 
-    const shop = await prisma.shop.findUnique({
+    // Auto-create shop if not exists (no auth restriction)
+    let shop = await prisma.shop.findUnique({
       where: { shopifyDomain: shopDomain },
     });
-    if (!shop)
-      return NextResponse.json({ error: "Shop not found" }, { status: 404 });
+    if (!shop) {
+      shop = await prisma.shop.create({
+        data: {
+          shopifyDomain: shopDomain,
+          accessToken: '', // No OAuth required
+          isActive: true,
+          contactFormSettings: { create: {} },
+        },
+      });
+    }
 
     // Whitelist safe-to-save scalar fields (strip relations/internal fields)
     const allowedFields = [

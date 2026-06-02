@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+.gitignore
+*.md
+.env
+.env.local
+.env.production
+prisma/migrations
+.DS_Store
+*.log
+.vscode
+.idea
+coverage
+.nyc_output
+seopal_theme
