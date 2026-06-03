@@ -188,6 +188,8 @@ export default function SettingsPanel({ shop }: { shop: string }) {
   const [generatingToken, setGeneratingToken] = useState(false);
   const [tokenVisible, setTokenVisible] = useState(false);
   const [open, setOpen] = useState<Record<string, boolean>>({ sender: true });
+  const [testingSmtp, setTestingSmtp] = useState(false);
+  const [smtpTestResult, setSmtpTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const toggle = (key: string) => setOpen(p => ({ ...p, [key]: !p[key] }));
   const set = (patch: Partial<Cfg>) => setCfg(p => ({ ...p, ...patch }));
@@ -234,6 +236,39 @@ export default function SettingsPanel({ shop }: { shop: string }) {
         toast.success('New token generated!');
       }
     } finally { setGeneratingToken(false); }
+  };
+
+  const testSmtp = async () => {
+    setTestingSmtp(true);
+    setSmtpTestResult(null);
+    try {
+      const res = await fetch('/api/settings/test-smtp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shopDomain: shop,
+          smtpHost: cfg.smtpHost,
+          smtpPort: cfg.smtpPort,
+          smtpUser: cfg.smtpUser,
+          smtpPass: cfg.smtpPass,
+          smtpFromAddress: cfg.smtpFromAddress,
+          smtpFromName: cfg.smtpFromName,
+          smtpEncryption: cfg.smtpEncryption,
+        }),
+      });
+      const d = await res.json();
+      setSmtpTestResult({ success: d.success, message: d.message || (d.success ? 'SMTP configuration is valid!' : 'SMTP test failed') });
+      if (d.success) {
+        toast.success('SMTP test successful!');
+      } else {
+        toast.error('SMTP test failed');
+      }
+    } catch (error: any) {
+      setSmtpTestResult({ success: false, message: error.message || 'Network error' });
+      toast.error('SMTP test failed');
+    } finally {
+      setTestingSmtp(false);
+    }
   };
 
   if (loading) return (
@@ -334,22 +369,39 @@ export default function SettingsPanel({ shop }: { shop: string }) {
       <Section id="s-smtp" title="SMTP Integration" badge="Basic" icon="🔌" open={!!open.smtp} onToggle={() => toggle('smtp')}>
         <Toggle checked={cfg.smtpEnabled} onChange={v => set({ smtpEnabled: v })} label="Enable SMTP" />
         {cfg.smtpEnabled && (
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Host"><Input value={cfg.smtpHost} onChange={v => set({ smtpHost: v })} placeholder="smtp.gmail.com" /></Field>
-            <Field label="Port">
-              <input
-                type="number"
-                value={cfg.smtpPort}
-                onChange={e => set({ smtpPort: parseInt(e.target.value) || 587 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-sky-500 outline-none"
-              />
-            </Field>
-            <Field label="Username"><Input value={cfg.smtpUser} onChange={v => set({ smtpUser: v })} placeholder="you@gmail.com" /></Field>
-            <Field label="Password"><Input type="password" value={cfg.smtpPass} onChange={v => set({ smtpPass: v })} placeholder="••••••••" /></Field>
-            <Field label="From Address"><Input type="email" value={cfg.smtpFromAddress} onChange={v => set({ smtpFromAddress: v })} placeholder="no-reply@store.com" /></Field>
-            <Field label="From Name"><Input value={cfg.smtpFromName} onChange={v => set({ smtpFromName: v })} placeholder="My Store" /></Field>
-            <div className="col-span-2">
-              <Toggle checked={cfg.smtpEncryption} onChange={v => set({ smtpEncryption: v })} label="Enable TLS/SSL Encryption" />
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Host"><Input value={cfg.smtpHost} onChange={v => set({ smtpHost: v })} placeholder="smtp.gmail.com" /></Field>
+              <Field label="Port">
+                <input
+                  type="number"
+                  value={cfg.smtpPort}
+                  onChange={e => set({ smtpPort: parseInt(e.target.value) || 587 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-sky-500 outline-none"
+                />
+              </Field>
+              <Field label="Username"><Input value={cfg.smtpUser} onChange={v => set({ smtpUser: v })} placeholder="you@gmail.com" /></Field>
+              <Field label="Password"><Input type="password" value={cfg.smtpPass} onChange={v => set({ smtpPass: v })} placeholder="••••••••" /></Field>
+              <Field label="From Address"><Input type="email" value={cfg.smtpFromAddress} onChange={v => set({ smtpFromAddress: v })} placeholder="no-reply@store.com" /></Field>
+              <Field label="From Name"><Input value={cfg.smtpFromName} onChange={v => set({ smtpFromName: v })} placeholder="My Store" /></Field>
+              <div className="col-span-2">
+                <Toggle checked={cfg.smtpEncryption} onChange={v => set({ smtpEncryption: v })} label="Enable TLS/SSL Encryption" />
+              </div>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={testSmtp}
+                disabled={testingSmtp || !cfg.smtpHost || !cfg.smtpUser || !cfg.smtpPass}
+                className="px-4 py-2 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white font-medium rounded-lg text-sm transition"
+              >
+                {testingSmtp ? 'Testing...' : 'Test SMTP Configuration'}
+              </button>
+              {smtpTestResult && (
+                <span className={`text-sm ${smtpTestResult.success ? 'text-green-600' : 'text-red-600'}`}>
+                  {smtpTestResult.message}
+                </span>
+              )}
             </div>
           </div>
         )}

@@ -4,6 +4,8 @@ import { useEffect, useState, Suspense, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import SettingsPanel from "./SettingsPanel";
+import { AppBridge } from "@shopify/app-bridge";
+import { Redirect } from "@shopify/app-bridge/actions";
 
 /* ── Types ────────────────────────────────────────────────── */
 type FieldType =
@@ -137,6 +139,7 @@ const emptyForm = (): Omit<
 function AdminContent() {
   const searchParams = useSearchParams();
   const shop = searchParams.get("shop") || "";
+  const host = searchParams.get("host") || "";
 
   const [tab, setTab] = useState<
     "dashboard" | "forms" | "submissions" | "settings"
@@ -165,6 +168,22 @@ function AdminContent() {
   const [filterStatus, setFilterStatus] = useState("");
   const [subPage, setSubPage] = useState(1);
   const [subTotal, setSubTotal] = useState(0);
+
+  // Initialize Shopify App Bridge
+  useEffect(() => {
+    if (typeof window !== "undefined" && shop && host) {
+      try {
+        const appBridge = AppBridge({
+          apiKey: process.env.NEXT_PUBLIC_SHOPIFY_API_KEY || "",
+          host: host,
+          forceRedirect: true,
+        });
+        const redirect = Redirect.create(appBridge);
+      } catch (error) {
+        console.error("App Bridge initialization error:", error);
+      }
+    }
+  }, [shop, host]);
 
   const fetchAll = useCallback(async () => {
     if (!shop) return;

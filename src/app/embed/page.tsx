@@ -57,7 +57,8 @@ function EmbedContent() {
     if (!formId) {
       // If no formId provided, try to fetch the first published form for the shop
       if (shop) {
-        fetch(`/api/forms?shop=${encodeURIComponent(shop)}`)
+        const baseUrl = process.env.NEXT_PUBLIC_HOST || (typeof window !== "undefined" ? window.location.origin : "");
+        fetch(`${baseUrl}/api/forms?shop=${encodeURIComponent(shop)}`)
           .then((r) => r.json())
           .then((d) => {
             if (d.forms && d.forms.length > 0) {
@@ -82,9 +83,10 @@ function EmbedContent() {
 
     // Prefer the public /api/forms/[id] endpoint which works with formId only.
     // Fall back to legacy ?shop=...&formId=... if shop is also provided.
+    const baseUrl = process.env.NEXT_PUBLIC_HOST || (typeof window !== "undefined" ? window.location.origin : "");
     const url = shop
-      ? `/api/forms?shop=${encodeURIComponent(shop)}&formId=${encodeURIComponent(formId)}`
-      : `/api/forms/${encodeURIComponent(formId)}`;
+      ? `${baseUrl}/api/forms?shop=${encodeURIComponent(shop)}&formId=${encodeURIComponent(formId)}`
+      : `${baseUrl}/api/forms/${encodeURIComponent(formId)}`;
 
     fetch(url)
       .then((r) => r.json())
@@ -134,7 +136,11 @@ function EmbedContent() {
       const payload: Record<string, string> = { ...values };
       if (form.enableHoneypot) payload["__hp"] = "";
 
-      const res = await fetch("/api/submissions", {
+      // Use absolute URL for API calls to avoid CORS issues in embed context
+      const baseUrl = process.env.NEXT_PUBLIC_HOST || (typeof window !== "undefined" ? window.location.origin : "");
+      const apiUrl = `${baseUrl}/api/submissions`;
+
+      const res = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -153,9 +159,10 @@ function EmbedContent() {
       setSubmitted(true);
       setValues({});
       setTimeout(postResize, 100);
-    } catch {
+    } catch (error: any) {
+      console.error("Submission error:", error);
       setSubmitError(
-        "Network error. Please check your connection and try again.",
+        error.message || "Network error. Please check your connection and try again.",
       );
     } finally {
       setSubmitting(false);
