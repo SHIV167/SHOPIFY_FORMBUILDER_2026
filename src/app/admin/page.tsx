@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import SettingsPanel from "./SettingsPanel";
-import { AppBridge } from "@shopify/app-bridge";
+import AppBridge from "@shopify/app-bridge";
 import { Redirect } from "@shopify/app-bridge/actions";
 
 /* ── Types ────────────────────────────────────────────────── */
