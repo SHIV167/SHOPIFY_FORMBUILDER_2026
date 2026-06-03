@@ -10,8 +10,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3006,
-        // Fix HTTP 431 - Increase max header size to 64KB for Shopify OAuth callbacks
-        NODE_OPTIONS: '--max-http-header-size=65536',
+        // Fix HTTP 431 - Increase max header size to 256KB for Shopify OAuth callbacks
+        NODE_OPTIONS: '--max-http-header-size=262144',
       },
     },
   ],
