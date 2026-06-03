@@ -6,9 +6,9 @@ const dev = process.env.NODE_ENV !== 'production';
 const hostname = '0.0.0.0';
 const port = parseInt(process.env.PORT || '10001', 10);
 
-// Increase max header size to 64KB to handle Shopify OAuth callbacks
+// Increase max header size to 256KB to handle Shopify OAuth callbacks
 // with large cookies (HTTP 431 fix)
-const MAX_HEADER_SIZE = 64 * 1024;
+const MAX_HEADER_SIZE = 256 * 1024;
 
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
