@@ -50,6 +50,13 @@ jobs:
             pm2 start ecosystem.config.cjs
             pm2 save
             
+            # Copy nginx configuration
+            sudo cp /home/ubuntu/formbuilder/nginx.conf /etc/nginx/sites-available/formbuilder
+            sudo ln -sf /etc/nginx/sites-available/formbuilder /etc/nginx/sites-enabled/
+            
+            # Test nginx configuration
+            sudo nginx -t
+            
             # Reload nginx
             sudo systemctl reload nginx
             
