@@ -32,6 +32,9 @@ jobs:
             # Install dependencies
             npm install
             
+            # Clean build artifacts
+            rm -rf .next
+            
             # Build the app
             npm run build
             
