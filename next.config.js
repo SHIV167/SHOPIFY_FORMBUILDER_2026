@@ -5,6 +5,9 @@ const nextConfig = {
   images: {
     domains: ['cdn.shopify.com'],
   },
+  // Fix chunk loading issues
+  generateEtags: false,
+  compress: false,
 };
 
 module.exports = nextConfig;

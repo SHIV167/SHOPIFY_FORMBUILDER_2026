@@ -23,8 +23,8 @@ ENV NODE_ENV=production
 ENV PORT=3005
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME="0.0.0.0"
-# Fix HTTP 431 - Increase max header size to 64KB for Shopify OAuth callbacks
-ENV NODE_OPTIONS="--max-http-header-size=65536"
+# Fix HTTP 431 - Increase max header size to 256KB for Shopify OAuth callbacks
+ENV NODE_OPTIONS="--max-http-header-size=262144"
 
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 
