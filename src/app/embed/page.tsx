@@ -1,153 +1,101 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState, useMemo } from "react";
 
-interface FormField {
-  id: string;
-  label: string;
-  fieldType: string;
-  placeholder?: string;
-  helpText?: string;
-  required: boolean;
-  options: string[];
-  defaultValue?: string;
-  width: string;
-  sortOrder: number;
-}
+export default function EmbeddedApp() {
+  const [shop, setShop] = useState<string | null>(null);
+  const [host, setHost] = useState<string | null>(null);
 
-interface ContactForm {
-  id: string;
-  title: string;
-  description?: string;
-  successMessage: string;
-  submitButtonText: string;
-  primaryColor: string;
-  bgColor: string;
-  formStyle: string;
-  enableHoneypot: boolean;
-  fields: FormField[];
-}
-
-function postResize() {
-  if (typeof window === "undefined" || window.parent === window) return;
-  const h = Math.max(
-    document.documentElement.scrollHeight,
-    document.body.scrollHeight,
-  );
-  window.parent.postMessage({ type: "cf_resize", height: h }, "*");
-}
-
-function EmbedContent() {
-  const searchParams = useSearchParams();
-  const shop = searchParams.get("shop") || "";
-  const formId = searchParams.get("formId") || "";
-
-  const [form, setForm] = useState<
-    (ContactForm & { shopDomain?: string }) | null
-  >(null);
-  const [loading, setLoading] = useState(true);
-  const [values, setValues] = useState<Record<string, string>>({});
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [submitError, setSubmitError] = useState("");
+  const authUrl = useMemo(() => {
+    if (!shop) return null;
+    return `/api/shopify/auth?shop=${encodeURIComponent(shop)}`;
+  }, [shop]);
 
   useEffect(() => {
-    if (!formId) {
-      // If no formId provided, try to fetch the first published form for the shop
-      if (shop) {
-        const baseUrl = process.env.NEXT_PUBLIC_HOST || (typeof window !== "undefined" ? window.location.origin : "");
-        fetch(`${baseUrl}/api/forms?shop=${encodeURIComponent(shop)}`)
-          .then((r) => r.json())
-          .then((d) => {
-            if (d.forms && d.forms.length > 0) {
-              // Use the first published form
-              const firstForm = d.forms.find((f: any) => f.isPublished) || d.forms[0];
-              setForm(firstForm);
-              // Init default values
-              const defaults: Record<string, string> = {};
-              (firstForm.fields as FormField[]).forEach((f: FormField) => {
-                if (f.defaultValue) defaults[f.label] = f.defaultValue;
-              });
-              setValues(defaults);
-            }
-          })
-          .catch(console.error)
-          .finally(() => setLoading(false));
-      } else {
-        setLoading(false);
+    const params = new URLSearchParams(window.location.search);
+    const shopParam = params.get('shop');
+    const hostParam = params.get('host');
+
+    if (hostParam) {
+      setHost(hostParam);
+      try {
+        localStorage.setItem('shopifyHost', hostParam);
+      } catch {
+        // ignore
       }
+    } else {
+      try {
+        const storedHost = localStorage.getItem('shopifyHost');
+        if (storedHost) setHost(storedHost);
+      } catch {
+        // ignore
+      }
+    }
+
+    if (shopParam) {
+      setShop(shopParam);
       return;
     }
 
-    // Prefer the public /api/forms/[id] endpoint which works with formId only.
-    // Fall back to legacy ?shop=...&formId=... if shop is also provided.
-    const baseUrl = process.env.NEXT_PUBLIC_HOST || (typeof window !== "undefined" ? window.location.origin : "");
-    const url = shop
-      ? `${baseUrl}/api/forms?shop=${encodeURIComponent(shop)}&formId=${encodeURIComponent(formId)}`
-      : `${baseUrl}/api/forms/${encodeURIComponent(formId)}`;
+    if (hostParam) {
+      try {
+        const decoded = atob(hostParam);
+        const hostParts = decoded.split('/');
+        const maybeShop = hostParts[hostParts.length - 1];
+        if (maybeShop) setShop(maybeShop);
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
 
-    fetch(url)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.form) {
-          setForm(d.form);
-          // Init default values
-          const defaults: Record<string, string> = {};
-          (d.form.fields as FormField[]).forEach((f: FormField) => {
-            if (f.defaultValue) defaults[f.label] = f.defaultValue;
-          });
-          setValues(defaults);
-        }
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [shop, formId]);
+  const adminUrl = useMemo(() => {
+    const p = new URLSearchParams();
+    if (shop) p.set('shop', shop);
+    if (host) p.set('host', host);
+    const qs = p.toString();
+    return qs ? `/admin?${qs}` : '/admin';
+  }, [shop, host]);
 
-  // Resize on every change
   useEffect(() => {
-    postResize();
-    setTimeout(postResize, 200);
-  }, [form, submitting, submitted, errors]);
+    if (!authUrl) return;
 
-  const validate = (): boolean => {
-    if (!form) return false;
-    const errs: Record<string, string> = {};
-    form.fields.forEach((f) => {
-      if (f.fieldType === "hidden") return;
-      const v = (values[f.label] || "").trim();
-      if (f.required && !v) errs[f.label] = `${f.label} is required`;
-      if (f.fieldType === "email" && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))
-        errs[f.label] = "Please enter a valid email address";
-      if (f.fieldType === "phone" && v && !/^[\d\s\+\-\(\)]{6,20}$/.test(v))
-        errs[f.label] = "Please enter a valid phone number";
-    });
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
+    const isEmbedded = window.top !== window.self;
+    if (!isEmbedded) return;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form || !validate()) return;
-    setSubmitting(true);
-    setSubmitError("");
     try {
-      const payload: Record<string, string> = { ...values };
-      if (form.enableHoneypot) payload["__hp"] = "";
+      window.top!.location.href = authUrl;
+    } catch {
+      window.location.href = authUrl;
+    }
+  }, [authUrl]);
 
-      // Use absolute URL for API calls to avoid CORS issues in embed context
-      const baseUrl = process.env.NEXT_PUBLIC_HOST || (typeof window !== "undefined" ? window.location.origin : "");
-      const apiUrl = `${baseUrl}/api/submissions`;
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <div className="max-w-lg w-full bg-white rounded-lg shadow p-6">
+        <h1 className="text-xl font-semibold text-gray-900">Contact Form Builder</h1>
+        <p className="text-sm text-gray-600 mt-2">
+          This app uses a custom Shopify OAuth + signed cookie session flow.
+        </p>
 
-      const res = await fetch(apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          shopDomain: shop,
-          formId: form.id,
-          data: payload,
-          pageUrl: typeof window !== "undefined" ? window.location.href : "",
+        <div className="mt-4 flex gap-3">
+          <a
+            href={adminUrl}
+            className="inline-flex items-center px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700"
+          >
+            Open Admin
+          </a>
+          <a
+            href={authUrl || '/install'}
+            className="inline-flex items-center px-4 py-2 rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100"
+          >
+            {shop ? 'Continue OAuth' : 'Install'}
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
           referrer: typeof document !== "undefined" ? document.referrer : "",
         }),
       });
