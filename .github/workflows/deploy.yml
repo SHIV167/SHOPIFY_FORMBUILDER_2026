@@ -38,6 +38,10 @@ jobs:
             # Build the app
             npm run build
             
+            # Kill any process using port 3006
+            fuser -k 3006/tcp 2>/dev/null || true
+            sleep 2
+            
             # Clean up old errored PM2 process if exists
             pm2 delete contactform-builder 2>/dev/null || true
             
