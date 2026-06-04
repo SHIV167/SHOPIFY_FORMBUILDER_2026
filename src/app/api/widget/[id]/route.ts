@@ -107,7 +107,7 @@ function buildWidgetJs(
   'use strict';
 
   var FORM = ${formDataJson};
-  var API  = '${apiHost}';
+  var API  = '${apiHost}' || (window.location.protocol + '//' + window.location.host);
   var CID  = 'cf-form-' + FORM.id;
 
   /* ── find container ── */

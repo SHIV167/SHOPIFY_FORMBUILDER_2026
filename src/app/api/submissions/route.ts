@@ -74,11 +74,11 @@ export async function POST(req: NextRequest) {
     if (!formId || !data)
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 },
+        { status: 400, headers: corsHeaders },
       );
 
     // Honeypot check
-    if (data.__hp) return NextResponse.json({ success: true }); // silently reject spam
+    if (data.__hp) return NextResponse.json({ success: true }, { headers: corsHeaders }); // silently reject spam
 
     // Resolve shop: if shopDomain not provided, look it up via the formId
     let shop;
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
       shop = formLookup?.shop ?? null;
     }
     if (!shop)
-      return NextResponse.json({ error: "Shop not found" }, { status: 404 });
+      return NextResponse.json({ error: "Shop not found" }, { status: 404, headers: corsHeaders });
 
     const form = await prisma.contactForm.findFirst({
       where: { id: formId, shopId: shop.id, isActive: true, isPublished: true },
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
     if (!form)
       return NextResponse.json(
         { error: "Form not found or inactive" },
-        { status: 404 },
+        { status: 404, headers: corsHeaders },
       );
 
     // Remove honeypot from stored data
@@ -207,12 +207,12 @@ export async function POST(req: NextRequest) {
       })
       .catch(() => null);
 
-    return NextResponse.json({ success: true, message: form.successMessage });
+    return NextResponse.json({ success: true, message: form.successMessage }, { headers: corsHeaders });
   } catch (err) {
     console.error("[submissions POST]", err);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500, headers: corsHeaders },
     );
   }
 }
