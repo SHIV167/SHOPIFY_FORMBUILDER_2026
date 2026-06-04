@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 
 interface FormField {
   id: string;
@@ -39,6 +39,7 @@ function postResize() {
 
 export default function EmbeddedApp() {
   const [shop, setShop] = useState<string | null>(null);
+  const [host, setHost] = useState<string | null>(null);
   const [formId, setFormId] = useState<string | null>(null);
 
   const [form, setForm] = useState<
@@ -51,10 +52,40 @@ export default function EmbeddedApp() {
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
+  const authUrl = useMemo(() => {
+    if (!shop) return null;
+    return `/api/shopify/auth?shop=${encodeURIComponent(shop)}`;
+  }, [shop]);
+
+  const adminUrl = useMemo(() => {
+    const p = new URLSearchParams();
+    if (shop) p.set('shop', shop);
+    if (host) p.set('host', host);
+    const qs = p.toString();
+    return qs ? `/admin?${qs}` : '/admin';
+  }, [shop, host]);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const shopParam = params.get('shop');
+    const hostParam = params.get('host');
     const formIdParam = params.get('formId');
+
+    if (hostParam) {
+      setHost(hostParam);
+      try {
+        localStorage.setItem('shopifyHost', hostParam);
+      } catch {
+        // ignore
+      }
+    } else {
+      try {
+        const storedHost = localStorage.getItem('shopifyHost');
+        if (storedHost) setHost(storedHost);
+      } catch {
+        // ignore
+      }
+    }
 
     if (shopParam) {
       setShop(shopParam);
@@ -63,9 +94,24 @@ export default function EmbeddedApp() {
     if (formIdParam) {
       setFormId(formIdParam);
     }
-  }, []);
+
+    // If accessed from Shopify admin (with host), redirect to admin
+    if (hostParam && !formIdParam) {
+      window.location.href = adminUrl;
+      return;
+    }
+
+    // If accessed with shop but no formId and not embedded, redirect to auth
+    if (shopParam && !formIdParam && !hostParam) {
+      const isEmbedded = window.top !== window.self;
+      if (!isEmbedded && authUrl) {
+        window.location.href = authUrl;
+      }
+    }
+  }, [authUrl, adminUrl]);
 
   useEffect(() => {
+    // Only fetch form if we have a formId (widget mode)
     if (!formId) {
       setLoading(false);
       return;
@@ -363,6 +409,35 @@ export default function EmbeddedApp() {
       </div>
     );
   };
+
+  // If no formId and not loading, show redirect/install UI (admin mode)
+  if (!formId && !loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="max-w-lg w-full bg-white rounded-lg shadow p-6">
+          <h1 className="text-xl font-semibold text-gray-900">Contact Form Builder</h1>
+          <p className="text-sm text-gray-600 mt-2">
+            This app uses a custom Shopify OAuth + signed cookie session flow.
+          </p>
+
+          <div className="mt-4 flex gap-3">
+            <a
+              href={adminUrl}
+              className="inline-flex items-center px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            >
+              Open Admin
+            </a>
+            <a
+              href={authUrl || '/install'}
+              className="inline-flex items-center px-4 py-2 rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100"
+            >
+              {shop ? 'Continue OAuth' : 'Install'}
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading)
     return (
