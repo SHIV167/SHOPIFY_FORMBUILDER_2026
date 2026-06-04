@@ -4,8 +4,6 @@ import { useEffect, useState, Suspense, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import SettingsPanel from "./SettingsPanel";
-import AppBridge from "@shopify/app-bridge";
-import { Redirect } from "@shopify/app-bridge/actions";
 
 /* ── Types ────────────────────────────────────────────────── */
 type FieldType =
@@ -168,22 +166,6 @@ function AdminContent() {
   const [filterStatus, setFilterStatus] = useState("");
   const [subPage, setSubPage] = useState(1);
   const [subTotal, setSubTotal] = useState(0);
-
-  // Initialize Shopify App Bridge
-  useEffect(() => {
-    if (typeof window !== "undefined" && shop && host) {
-      try {
-        const appBridge = AppBridge({
-          apiKey: process.env.NEXT_PUBLIC_SHOPIFY_API_KEY || "",
-          host: host,
-          forceRedirect: true,
-        });
-        const redirect = Redirect.create(appBridge);
-      } catch (error) {
-        console.error("App Bridge initialization error:", error);
-      }
-    }
-  }, [shop, host]);
 
   // Helper to get absolute URL for API calls
   const getApiUrl = (path: string) => {
