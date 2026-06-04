@@ -185,11 +185,17 @@ function AdminContent() {
     }
   }, [shop, host]);
 
+  // Helper to get absolute URL for API calls
+  const getApiUrl = (path: string) => {
+    const baseUrl = process.env.NEXT_PUBLIC_HOST || (typeof window !== "undefined" ? window.location.origin : "");
+    return `${baseUrl}${path}`;
+  };
+
   const fetchAll = useCallback(async () => {
     if (!shop) return;
     setLoading(true);
     try {
-      const r = await fetch(`/api/forms?shop=${encodeURIComponent(shop)}`);
+      const r = await fetch(getApiUrl(`/api/forms?shop=${encodeURIComponent(shop)}`));
       const d = await r.json();
       setForms(d.forms || []);
       setStats({
@@ -209,7 +215,7 @@ function AdminContent() {
     const params = new URLSearchParams({ shop, page: String(subPage) });
     if (filterFormId) params.set("formId", filterFormId);
     if (filterStatus) params.set("status", filterStatus);
-    const r = await fetch(`/api/submissions?${params}`);
+    const r = await fetch(getApiUrl(`/api/submissions?${params}`));
     const d = await r.json();
     setSubmissions(d.submissions || []);
     setSubTotal(d.total || 0);
@@ -285,7 +291,7 @@ function AdminContent() {
       const body = editingForm
         ? { ...formDraft, id: editingForm.id, shopDomain: shop }
         : { ...formDraft, shopDomain: shop };
-      const r = await fetch("/api/forms", {
+      const r = await fetch(getApiUrl("/api/forms"), {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -305,7 +311,7 @@ function AdminContent() {
 
   const deleteForm = async (id: string) => {
     if (!confirm("Delete this form and all its submissions?")) return;
-    const r = await fetch("/api/forms", {
+    const r = await fetch(getApiUrl("/api/forms"), {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, shopDomain: shop }),
@@ -317,7 +323,7 @@ function AdminContent() {
   };
 
   const markRead = async (ids: string[], isRead: boolean) => {
-    await fetch("/api/submissions", {
+    await fetch(getApiUrl("/api/submissions"), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids, shopDomain: shop, isRead }),
@@ -327,7 +333,7 @@ function AdminContent() {
 
   const deleteSubmissions = async (ids: string[]) => {
     if (!confirm(`Delete ${ids.length} submission(s)?`)) return;
-    await fetch("/api/submissions", {
+    await fetch(getApiUrl("/api/submissions"), {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids, shopDomain: shop }),
@@ -339,7 +345,7 @@ function AdminContent() {
   const saveSettings = async () => {
     setSaving(true);
     try {
-      const r = await fetch("/api/settings", {
+      const r = await fetch(getApiUrl("/api/settings"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ shopDomain: shop, ...settings }),
